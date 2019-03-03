@@ -115,3 +115,7 @@ dmypy.json
 
 # vscode
 .vscode
+
+# Local Google Cloud Service Account
+Daimoku Keeper-00ce36cdba53.json
+gcs_keyfile.json
