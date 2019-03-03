@@ -1,3 +1,4 @@
+import os
 from flask import Flask, request, abort
 from linebot import (
     LineBotApi, WebhookHandler
@@ -13,7 +14,6 @@ from linebot.models import (
     ImageMessage, VideoMessage, AudioMessage,
     UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent
 )
-from boto.s3.connection import S3Connection
 
 LINE_CHANNEL_SECRET = os.environ['LINE_CHANNEL_SECRET']
 LINE_CHANNEL_ID = os.environ['LINE_CHANNEL_ID']
@@ -40,7 +40,7 @@ def webhook():
     # Handle webhook body
     try:
         handler.handle(body, signature)
-    except InvalidSignatureError
+    except InvalidSignatureError:
         abort(400)
 
     return 'OK'
