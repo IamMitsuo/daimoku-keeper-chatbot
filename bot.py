@@ -61,10 +61,10 @@ def webhook():
 def handle_message(event):
     text = event.message.text
 
-    # line_bot_api.reply_message(
-    #     event.reply_token,
-    #     TextSendMessage(text=event.message.text)
-    # )
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=text)
+    )
 
 def explicit():
     from google.cloud import storage
