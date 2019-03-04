@@ -42,7 +42,7 @@ app.config['DEBUG'] = True
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-@app.route("/")
+@app.route("/", methods=['GET', 'POST'])
 def hello():
     return "Hello World!"
 
@@ -84,12 +84,29 @@ def handle_message(event):
     text = event.message.text
     detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, text, 'TH')
 
+    source_userId = event.source.user_id
+
     for detected_intent in detected_intents:
-        text += detected_intent.query_result.fulfillment_text
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=text)
-    )
+        intentName = detected_intent.query_result.intent.display_name
+        if intentName == 'RequestToKeepDaimokuIntent':
+            parameters = MessageToDict(detected_intent.query_result.parameters)
+            daimoku_count = None
+            if parameters['DaimokuCountEntryEntity'] != '' and parameters['DaimokuCountEntryEntity1'] != '':
+                daimoku_count = int(parameters['DaimokuCountEntryEntity']['number'] + parameters['DaimokuCountEntryEntity1']['number'])
+            elif parameters['DaimokuCountEntryEntity'] != '':
+                daimoku_count = int(parameters['DaimokuCountEntryEntity']['number'])
+            elif parameters['DaimokuCountEntryEntity1'] != '':
+                daimoku_count = int(parameters['DaimokuCountEntryEntity']['number'])
+            text = 'รับทราบครับ {} สวดได้ {} ช่อง'.format(source_userId, daimoku_count)
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=text)
+            )
+        elif intentName == 'Default Fallback Intent':
+            line_bot_api.reply_message(
+                event.reply_token,
+                TextSendMessage(text=text)
+            )
 
 def explicit():
     from google.cloud import storage
