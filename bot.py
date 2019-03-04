@@ -85,8 +85,7 @@ def handle_message(event):
     detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, text, 'TH')
 
     for detected_intent in detected_intents:
-        print(detected_intent.query_result.fulfillment_text)
-        
+        text += detected_intent.query_result.fulfillment_text
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=text)
