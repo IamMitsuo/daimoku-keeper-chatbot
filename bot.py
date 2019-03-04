@@ -1,6 +1,7 @@
 import os
 import json
-from flask import Flask, request, abort
+import uuid
+from flask import Flask, request, abort, Response, jsonify
 from linebot import (
     LineBotApi, WebhookHandler
 )
@@ -15,12 +16,15 @@ from linebot.models import (
     ImageMessage, VideoMessage, AudioMessage,
     UnfollowEvent, FollowEvent, JoinEvent, LeaveEvent, BeaconEvent
 )
+from google.protobuf.json_format import MessageToDict, MessageToJson
 
 LINE_CHANNEL_SECRET = os.environ['LINE_CHANNEL_SECRET']
 LINE_CHANNEL_ID = os.environ['LINE_CHANNEL_ID']
 LINE_CHANNEL_ACCESS_TOKEN = os.environ['LINE_CHANNEL_ACCESS_TOKEN']
 GCS_KEYFILE = os.environ['GOOGLE_APPLICATION_CREDENTIALS']
 GCS_KEYFILE_PATH = ''
+DIALOGFLOW_PROJECT_ID = 'daimoku-keeper'
+DIALOGFLOW_SESSION_ID = uuid.uuid4().hex
 
 if not os.path.exists(GCS_KEYFILE):
     # Create file path for GCS by parsing the string to json file
@@ -29,9 +33,11 @@ if not os.path.exists(GCS_KEYFILE):
     with open(GCS_KEYFILE_PATH, 'w') as gcs_keyfile_file:
         json.dump(json.loads(GCS_KEYFILE), gcs_keyfile_file, indent=4)
         gcs_keyfile_file.close()
-
+else:
+    GCS_KEYFILE_PATH = GCS_KEYFILE
 
 app = Flask(__name__)
+app.config['DEBUG'] = True
 
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
@@ -61,7 +67,13 @@ def webhook():
 def test_dialogflow():
     if 'keyword' in request.args:
         keyword = request.args['keyword']
-        return detect_intent_texts('daimoku-keeper', 'hello', keyword, 'TH')
+        detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, keyword, 'TH')
+        response = {}
+        for detected_intent in detected_intents:
+            response['intentName'] = detected_intent.query_result.intent.display_name
+            response['parameters'] = MessageToDict(detected_intent.query_result.parameters)
+        
+        return jsonify(response)
 
 @app.route("/test/explicit", methods=['GET'])
 def test_explicit():
@@ -70,7 +82,11 @@ def test_explicit():
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text
+    detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, text, 'TH')
 
+    for detected_intent in detected_intents:
+        print(detected_intent.query_result.fulfillment_text)
+        
     line_bot_api.reply_message(
         event.reply_token,
         TextSendMessage(text=text)
@@ -97,11 +113,15 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
     of the conversation."""
 
     import dialogflow_v2 as dialogflow
-    session_client = dialogflow.SessionsClient()
+    session_client = dialogflow.SessionsClient.from_service_account_json(GCS_KEYFILE_PATH)
 
     session = session_client.session_path(project_id, session_id)
     print('Session path: {}\n'.format(session))
 
+    if type(texts) is str   :
+        texts = [texts]
+    
+    detected_intents = []
     for text in texts:
         text_input = dialogflow.types.TextInput(
             text=text, language_code=language_code)
@@ -110,14 +130,14 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
 
         response = session_client.detect_intent(
             session=session, query_input=query_input)
+        
+        detected_intents.append(response)
 
-        print('=' * 20)
-        print('Query text: {}'.format(response.query_result.query_text))
-        print('Detected intent: {} (confidence: {})\n'.format(
-            response.query_result.intent.display_name,
-            response.query_result.intent_detection_confidence))
-        return('Fulfillment text: {}\n'.format(
-            response.query_result.fulfillment_text))
+    return detected_intents
+
+def keep_daimoku(query_result):
+    
+    pass
 
 if __name__ == "__main__":
     app.run()
