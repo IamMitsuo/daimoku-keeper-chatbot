@@ -57,6 +57,16 @@ def webhook():
 
     return 'OK'
 
+@app.route("/test/dialogflow", methods=['GET'])
+def test_dialogflow():
+    if 'keyword' in request.args:
+        keyword = request.args['keyword']
+        return detect_intent_texts('daimoku-keeper', 'hello', keyword, 'TH')
+
+@app.route("/test/explicit", methods=['GET'])
+def test_explicit():
+    return explicit()
+
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text
@@ -71,12 +81,43 @@ def explicit():
 
     # Explicitly use service account credentials by specifying the private key
     # file.
-    storage_client = storage.Client.from_service_account_json(
-        GCS_KEYFILE_PATH)
+    if GCS_KEYFILE_PATH != '':
+        storage_client = storage.Client.from_service_account_json(GCS_KEYFILE_PATH)
+    else:
+        storage_client = storage.Client.from_service_account_json(GCS_KEYFILE)
 
     # Make an authenticated API request
     buckets = list(storage_client.list_buckets())
     print(buckets)
+    return buckets
+
+def detect_intent_texts(project_id, session_id, texts, language_code):
+    """Returns the result of detect intent with texts as inputs.
+    Using the same `session_id` between requests allows continuation
+    of the conversation."""
+
+    import dialogflow_v2 as dialogflow
+    session_client = dialogflow.SessionsClient()
+
+    session = session_client.session_path(project_id, session_id)
+    print('Session path: {}\n'.format(session))
+
+    for text in texts:
+        text_input = dialogflow.types.TextInput(
+            text=text, language_code=language_code)
+
+        query_input = dialogflow.types.QueryInput(text=text_input)
+
+        response = session_client.detect_intent(
+            session=session, query_input=query_input)
+
+        print('=' * 20)
+        print('Query text: {}'.format(response.query_result.query_text))
+        print('Detected intent: {} (confidence: {})\n'.format(
+            response.query_result.intent.display_name,
+            response.query_result.intent_detection_confidence))
+        return('Fulfillment text: {}\n'.format(
+            response.query_result.fulfillment_text))
 
 if __name__ == "__main__":
     app.run()
