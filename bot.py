@@ -152,7 +152,7 @@ def handle_message(event):
                     })   
                     text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], daimoku_count, added_datetime)
                 else:
-                     text = 'ขอชื่อด้วยคร้าบ'
+                    text = 'ขอชื่อด้วยคร้าบ'
                     new_user = {'user_id': source_userId, 
                         'count': daimoku_count,
                         'date': added_datetime,
