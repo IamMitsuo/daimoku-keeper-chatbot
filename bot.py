@@ -171,7 +171,8 @@ def handle_message(event):
                     }
                     cache_users.append(new_user)
             except exceptions.NotFound:
-                text = 'ขอชื่อด้วยคร้าบ'
+                profile = line_bot_api.get_profile(source_userId)
+                text = 'ขอชื่อด้วยคร้าบ @{}'.format(profile.display_name)
                 new_user = {'user_id': source_userId, 
                     'count': daimoku_count,
                     'date': added_datetime,
