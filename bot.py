@@ -64,6 +64,8 @@ db = firestore.client(app=firebase_app)
 print(db)
 print(firebase_admin.get_app().credential)
 
+cache_users = []
+
 @app.route("/", methods=['GET', 'POST'])
 def hello():
     return "Hello World!"
@@ -147,6 +149,12 @@ def handle_message(event):
                 text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], daimoku_count, added_datetime)
             except exceptions.NotFound:
                 text = 'ขอชื่อด้วยคร้าบ'
+                new_user = {'user_id': source_userId, 
+                    'count': daimoku_count,
+                    'date': added_datetime,
+                    'state': 'pending'
+                }
+                cache_users.append(new_user)
 
             line_bot_api.reply_message(
                 event.reply_token,
@@ -154,10 +162,26 @@ def handle_message(event):
             )
 
         elif intentName == 'Default Fallback Intent':
-            line_bot_api.reply_message(
-                event.reply_token,
-                TextSendMessage(text=text)
-            )
+            for user in cache_users:
+                if user['user_id'] == source_userId and user['state'] == 'pending':
+                    name = text
+                    doc_ref = db.collection(u'users').document(u'{}'.format(source_userId))
+                    doc_ref.set({
+                        u'name': name
+                    })
+                    db.collection(u'daimokuLog').add({
+                        u'count': user['count'],
+                        u'date': user['date'],
+                        u'user': user['user_id']
+                    })
+                    text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(name, user['count'], user['date'])
+                    user['state'] = 'in_record'
+                    line_bot_api.reply_message(
+                        event.reply_token,
+                        TextSendMessage(text=text)
+                    )
+                    break
+            
 
 def explicit():
     from google.cloud import storage
@@ -201,10 +225,6 @@ def detect_intent_texts(project_id, session_id, texts, language_code):
         detected_intents.append(response)
 
     return detected_intents
-
-def keep_daimoku(query_result):
-    
-    pass
 
 if __name__ == "__main__":
     app.run()
