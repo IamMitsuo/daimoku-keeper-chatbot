@@ -143,13 +143,22 @@ def handle_message(event):
                 added_datetime = added_datetime_obj.isoformat()
             try:
                 user_doc = db.collection(u'users').document(u'{}'.format(source_userId)).get()
-                user_doc_dict = user_doc.to_dict()
-                db.collection(u'daimokuLog').add({
-                    u'count': daimoku_count,
-                    u'date': added_datetime,
-                    u'user': source_userId
-                })   
-                text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], daimoku_count, added_datetime)
+                if user_doc is not None:
+                    user_doc_dict = user_doc.to_dict()
+                    db.collection(u'daimokuLog').add({
+                        u'count': daimoku_count,
+                        u'date': added_datetime,
+                        u'user': source_userId
+                    })   
+                    text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], daimoku_count, added_datetime)
+                else:
+                     text = 'ขอชื่อด้วยคร้าบ'
+                    new_user = {'user_id': source_userId, 
+                        'count': daimoku_count,
+                        'date': added_datetime,
+                        'state': 'pending'
+                    }
+                    cache_users.append(new_user)
             except exceptions.NotFound:
                 text = 'ขอชื่อด้วยคร้าบ'
                 new_user = {'user_id': source_userId, 
