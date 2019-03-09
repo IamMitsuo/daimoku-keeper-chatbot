@@ -161,7 +161,8 @@ def handle_message(event):
                         u'date': added_datetime,
                         u'user': source_userId
                     })   
-                    text = 'รับทราบครับ {} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], daimoku_count, added_datetime)
+                    profile = line_bot_api.get_profile(source_userId)
+                    text = 'รับทราบครับ {} @{} สวดได้ {} ช่อง ({})'.format(user_doc_dict['name'], profile.display_name, daimoku_count, added_datetime)
                 else:
                     text = 'ขอชื่อด้วยคร้าบ'
                     new_user = {'user_id': source_userId, 
