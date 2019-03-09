@@ -85,7 +85,7 @@ def webhook():
 
     return 'OK'
 
-@handler.add(MessageEvent, message=TextMessage)
+#@handler.add(MessageEvent, message=TextMessage)
 def test_handler(event):
     text = event.message.text
     line_bot_api.reply_message(event.reply_token, TextSendMessage(text=text))
@@ -115,7 +115,7 @@ def test_firestore():
         doc_list.append(doc.to_dict())
     return str(doc_list)
 
-#@handler.add(MessageEvent, message=TextMessage)
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text
     detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, text, 'TH')
