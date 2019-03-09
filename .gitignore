@@ -123,3 +123,4 @@ gcs_firebase_adminsdk_keyfile.json
 daimoku-keeper-831ea00a2923.json
 runscript.bat
 ngrok.exe
+.ngrok.exe.old

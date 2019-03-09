@@ -59,10 +59,7 @@ handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
 cred = credentials.Certificate(GCS_FIREBASE_ADMINSDK_KEYFILE_PATH)
 firebase_app = firebase_admin.initialize_app(cred)
-print(firebase_app.project_id)
 db = firestore.client(app=firebase_app)
-print(db)
-print(firebase_admin.get_app().credential)
 
 cache_users = []
 
@@ -83,9 +80,15 @@ def webhook():
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
+        app.logger.info('Invalid Signature')
         abort(400)
 
     return 'OK'
+
+@handler.add(MessageEvent, message=TextMessage)
+def test_handler(event):
+    text = event.message.text
+    line_bot_api.reply_message(event.reply_token, TextSendMessage(text=text))
 
 @app.route("/test/dialogflow", methods=['GET'])
 def test_dialogflow():
@@ -112,11 +115,11 @@ def test_firestore():
         doc_list.append(doc.to_dict())
     return str(doc_list)
 
-@handler.add(MessageEvent, message=TextMessage)
+#@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     text = event.message.text
     detected_intents = detect_intent_texts(DIALOGFLOW_PROJECT_ID, DIALOGFLOW_SESSION_ID, text, 'TH')
-
+    app.logger.info('text: {}'.format(text))
     source_userId = event.source.user_id
 
     for detected_intent in detected_intents:
