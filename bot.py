@@ -113,6 +113,16 @@ def test_firestore():
     doc_list = []
     for doc in docs:
         doc_list.append(doc.to_dict())
+    
+    user_doc_ref = db.collection(u'users').document(u'{}'.format('U72ab8754f9467a31c6ed9be41f7e2c68'))
+    user_doc = user_doc_ref.get()
+    user_doc_dict = user_doc.to_dict()
+    app.logger.info(user_doc)
+    if user_doc_dict is None:
+        app.logger.info('user_doc is none')
+        db.collection(u'users').document(u'{}'.format('U72ab8754f9467a31c6ed9be41f7e2c68')).set({
+            u'name': 'มิตจัง'
+        })
     return str(doc_list)
 
 @handler.add(MessageEvent, message=TextMessage)
@@ -143,9 +153,9 @@ def handle_message(event):
                 added_datetime = added_datetime_obj.isoformat()
             try:
                 user_doc = db.collection(u'users').document(u'{}'.format(source_userId)).get()
+                user_doc_dict = user_doc.to_dict()
                 app.logger.info(str(user_doc.to_dict()))
-                if user_doc is not None:
-                    user_doc_dict = user_doc.to_dict()
+                if user_doc_dict is not None:
                     db.collection(u'daimokuLog').add({
                         u'count': daimoku_count,
                         u'date': added_datetime,
