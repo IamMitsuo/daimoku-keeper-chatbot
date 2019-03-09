@@ -143,6 +143,7 @@ def handle_message(event):
                 added_datetime = added_datetime_obj.isoformat()
             try:
                 user_doc = db.collection(u'users').document(u'{}'.format(source_userId)).get()
+                app.logger.info(str(user_doc.to_dict()))
                 if user_doc is not None:
                     user_doc_dict = user_doc.to_dict()
                     db.collection(u'daimokuLog').add({
